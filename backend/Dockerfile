@@ -3,9 +3,8 @@ FROM python:3.11-alpine AS builder
 
 WORKDIR /app
 
-
 # Copy requirements and install
-COPY backend/requirements.txt ./
+COPY requirements.txt ./
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Production stage
@@ -27,7 +26,7 @@ ENV PORT=${PORT}
 ENV PYTHONUNBUFFERED=1
 
 # Copy application code
-COPY backend/ .
+COPY . .
 
 # Create database directory
 RUN mkdir -p database
