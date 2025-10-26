@@ -18,7 +18,7 @@ COPY --from=builder /root/.local /root/.local
 ENV PATH=/root/.local/bin:$PATH
 
 # Build args
-ARG FLASK_ENV=production
+ARG FLASK_ENV=production 
 ARG PORT=8000
 
 # Set environment variables

@@ -1,0 +1,34 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: ap-south-1
+    IMAGE_REPO_URI: 741989611757.dkr.ecr.ap-south-1.amazonaws.com/sql/fe/image
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws --version
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 741989611757.dkr.ecr.ap-south-1.amazonaws.com
+      - IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}
+      - echo "Image tag will be: $IMAGE_TAG"
+
+  build:
+    commands:
+      - echo "Building the frontend Docker image..."
+      - docker build -t $IMAGE_REPO_URI:$IMAGE_TAG .
+      - echo "Tagging image..."
+      - docker tag $IMAGE_REPO_URI:$IMAGE_TAG $IMAGE_REPO_URI:latest
+
+  post_build:
+    commands:
+      - echo "Pushing frontend images to ECR..."
+      - docker push $IMAGE_REPO_URI:$IMAGE_TAG
+      - docker push $IMAGE_REPO_URI:latest
+      - echo "Creating imagedefinitions.json for ECS deployment..."
+      - printf '[{"name":"frontend-container","imageUri":"%s:%s"}]' $IMAGE_REPO_URI $IMAGE_TAG > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
