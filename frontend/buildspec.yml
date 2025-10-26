@@ -23,7 +23,7 @@ phases:
     commands:
       - echo "Build started on $(date)"
       - echo "Building the Frontend Docker image..."
-      - echo "Backend URL: $BACKEND_URL"
+      - echo "Backend URL is $BACKEND_URL"
       - docker build -f frontend/Dockerfile --build-arg VITE_API_URL=$BACKEND_URL -t $REPOSITORY_URI:$IMAGE_TAG ./frontend
       - docker tag $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:latest
 
