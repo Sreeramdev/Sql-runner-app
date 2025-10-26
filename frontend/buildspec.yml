@@ -7,7 +7,7 @@ env:
     REPOSITORY_NAME: sql/fe/image
     IMAGE_TAG: latest
     REPOSITORY_URI: 007777689721.dkr.ecr.ap-south-2.amazonaws.com/sql/fe/image
-    BACKEND_URL: http://3.111.38.146:8000
+    BACKEND_URL: http://sql-backend-lb-735475995.ap-south-2.elb.amazonaws.com
 
 phases:
   pre_build:
