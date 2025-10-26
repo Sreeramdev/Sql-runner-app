@@ -2,11 +2,11 @@ version: 0.2
 
 env:
   variables:
-    AWS_REGION: ap-south-1
-    ACCOUNT_ID: 741989611757
+    AWS_REGION: ap-south-2
+    ACCOUNT_ID: 007777689721
     REPOSITORY_NAME: sql/be/image
     IMAGE_TAG: latest
-    REPOSITORY_URI: 741989611757.dkr.ecr.ap-south-1.amazonaws.com/sql/be/image
+    REPOSITORY_URI: 007777689721.dkr.ecr.ap-south-2.amazonaws.com/sql/be/image
 
 phases:
   pre_build:

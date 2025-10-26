@@ -4,9 +4,10 @@ env:
   variables:
     AWS_REGION: ap-south-2
     ACCOUNT_ID: 007777689721
-    REPOSITORY_NAME: sql/be/image
+    REPOSITORY_NAME: sql/fe/image
     IMAGE_TAG: latest
-    REPOSITORY_URI: 007777689721.dkr.ecr.ap-south-2.amazonaws.com/sql/be/image
+    REPOSITORY_URI: 007777689721.dkr.ecr.ap-south-2.amazonaws.com/sql/fe/image
+    BACKEND_URL: http://3.111.38.146:8000
 
 phases:
   pre_build:
@@ -21,8 +22,12 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - echo Building the Backend Docker image...
-      - docker build -f backend/Dockerfile -t $REPOSITORY_URI:$IMAGE_TAG ./backend
+      - echo Building the Frontend Docker image...
+      - echo Backend URL: $BACKEND_URL
+      - docker build -f frontend/Dockerfile \
+          --build-arg VITE_API_URL=$BACKEND_URL \
+          -t $REPOSITORY_URI:$IMAGE_TAG \
+          ./frontend
       - docker tag $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:latest
 
   post_build:
@@ -31,7 +36,7 @@ phases:
       - echo Pushing the Docker images...
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - docker push $REPOSITORY_URI:latest
-      - printf '[{"name":"sql-backend-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"sql-frontend-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
   files:
