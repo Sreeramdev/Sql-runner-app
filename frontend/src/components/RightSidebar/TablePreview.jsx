@@ -1,18 +1,24 @@
-// src/components/RightSidebar/TablePreview.jsx
 import { useState, useEffect } from 'react';
 import { getTableDetails } from '../../services/api';
 import { theme } from '../../config/theme';
 
-const TablePreview = ({ tableName }) => {
+const TablePreview = ({ tableName, showHistory, onQuerySelect }) => {
   const [tableData, setTableData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    if (tableName) {
+    if (tableName && !showHistory) {
       loadTableData();
     }
-  }, [tableName]);
+  }, [tableName, showHistory]);
+
+  useEffect(() => {
+    if (showHistory) {
+      loadHistory();
+    }
+  }, [showHistory]);
 
   const loadTableData = async () => {
     try {
@@ -32,6 +38,73 @@ const TablePreview = ({ tableName }) => {
     }
   };
 
+  const loadHistory = () => {
+    const historyData = localStorage.getItem('sqlQueryHistory');
+    const queries = historyData ? JSON.parse(historyData) : [];
+    setHistory(queries);
+  };
+
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
+
+  const handleClearHistory = () => {
+    if (window.confirm('Are you sure you want to clear all query history?')) {
+      localStorage.removeItem('sqlQueryHistory');
+      loadHistory();
+    }
+  };
+
+  // Show history view
+  if (showHistory) {
+    if (history.length === 0) {
+      return (
+        <div style={styles.container}>
+          <div style={styles.historyHeader}>
+            <span style={styles.sectionTitle}>Query History</span>
+          </div>
+          <div style={styles.placeholder}>
+            No query history yet. Execute some queries to see them here.
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={styles.container}>
+        <div style={styles.historyHeader}>
+          <span style={styles.sectionTitle}>Query History</span>
+          <button style={styles.clearButton} onClick={handleClearHistory}>
+            Clear All
+          </button>
+        </div>
+        <div style={styles.historyList}>
+          {history.map((entry) => (
+            <div 
+              key={entry.id} 
+              style={styles.historyItem}
+              onClick={() => onQuerySelect && onQuerySelect(entry.query)}
+            >
+              <div style={styles.queryText}>{entry.query}</div>
+              <div style={styles.queryTimestamp}>{formatDate(entry.timestamp)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Normal table preview view
   if (!tableName) {
     return (
       <div style={styles.container}>
@@ -198,6 +271,50 @@ const styles = {
     padding: theme.spacing.md,
     color: theme.colors.error,
     textAlign: 'center',
+    fontFamily: theme.fonts.primary,
+  },
+  historyHeader: {
+    padding: theme.spacing.md,
+    borderBottom: `1px solid ${theme.colors.border}`,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  clearButton: {
+    backgroundColor: 'transparent',
+    color: theme.colors.error,
+    border: `1px solid ${theme.colors.error}`,
+    borderRadius: theme.borderRadius.sm,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    fontSize: '12px',
+    fontFamily: theme.fonts.primary,
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  historyList: {
+    padding: theme.spacing.md,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing.sm,
+  },
+  historyItem: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.sm,
+    padding: theme.spacing.md,
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    border: `1px solid ${theme.colors.border}`,
+  },
+  queryText: {
+    color: theme.colors.textSecondary,
+    fontSize: '13px',
+    fontFamily: theme.fonts.mono,
+    marginBottom: theme.spacing.xs,
+    wordBreak: 'break-word',
+  },
+  queryTimestamp: {
+    color: theme.colors.textMuted,
+    fontSize: '11px',
     fontFamily: theme.fonts.primary,
   },
 };

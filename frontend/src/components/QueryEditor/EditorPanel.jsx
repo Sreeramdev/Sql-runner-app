@@ -1,7 +1,7 @@
-// src/components/QueryEditor/EditorPanel.jsx
 import { useState } from 'react';
 import { executeQuery } from '../../services/api';
 import { theme } from '../../config/theme';
+import { queryHistoryManager } from '../../utils/queryHistory';
 import Toolbar from './Toolbar';
 import QueryInput from './QueryInput';
 import ResultsDisplay from './ResultsDisplay';
@@ -44,6 +44,9 @@ const EditorPanel = () => {
         setResults(response.data);
         setRowCount(response.rowcount);
         setQueryType(detectedType);
+        
+        // Add query to history
+        queryHistoryManager.addQuery(query);
       } else {
         setError(response.error);
       }
