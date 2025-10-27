@@ -1,136 +1,258 @@
 #!/usr/bin/env python3
 
 import sys
-import traceback
 import os
+from flask import Flask, request, jsonify, g
+from flask_cors import CORS
+from logger import setup_logger, log_request_middleware, log_with_context, log_api_call
 
-print("="*60)
-print("SQL RUNNER BACKEND - STARTING...")
-print("="*60)
+# Setup logger first
+logger = setup_logger('sql_runner')
 
-# Step 1: Import Flask
-try:
-    from flask import Flask, request, jsonify
-    print("✓ Flask imported successfully")
-except Exception as e:
-    print(f"✗ ERROR importing Flask: {e}")
-    traceback.print_exc()
-    sys.exit(1)
+logger.info("SQL Runner Backend - Starting application", extra={'extra_data': {
+    'environment': os.getenv('ENVIRONMENT', 'development'),
+    'python_version': sys.version
+}})
 
-# Step 2: Import CORS
-try:
-    from flask_cors import CORS
-    print("✓ Flask-CORS imported successfully")
-except Exception as e:
-    print(f"✗ ERROR importing Flask-CORS: {e}")
-    traceback.print_exc()
-    sys.exit(1)
-
-# Step 3: Import setup module
+# Import modules
 try:
     from setup import setup_database
-    print("✓ Setup module imported successfully")
+    logger.info("Setup module imported successfully")
 except Exception as e:
-    print(f"✗ ERROR importing setup module: {e}")
-    print(f"   Make sure setup.py exists in the same folder")
-    traceback.print_exc()
+    logger.error("Failed to import setup module", exc_info=True, extra={'extra_data': {
+        'error': str(e)
+    }})
     sys.exit(1)
 
-# Step 4: Check and setup database if needed
-# Use environment variable or default path
+# Database setup
 DATABASE_PATH = os.getenv('DATABASE_PATH', os.path.join(os.path.dirname(__file__), '..', 'database', 'sql_runner.db'))
-print(f"\nDatabase path: {DATABASE_PATH}")
 
-print("\nChecking database...")
+logger.info("Checking database", extra={'extra_data': {
+    'database_path': DATABASE_PATH,
+    'exists': os.path.exists(DATABASE_PATH)
+}})
+
 if not os.path.exists(DATABASE_PATH):
-    print("⚠ Database not found. Creating database...")
-    # Create database directory if it doesn't exist
+    logger.info("Database not found, creating new database")
     os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
     setup_database()
-    print("✓ Database setup completed")
+    logger.info("Database setup completed successfully")
 else:
-    print("✓ Database already exists")
+    logger.info("Database already exists")
 
-# Step 5: Import database module
+# Import database module
 try:
     from database import execute_query, get_all_tables, get_table_info
-    print("✓ Database module imported successfully")
+    logger.info("Database module imported successfully")
 except Exception as e:
-    print(f"✗ ERROR importing database module: {e}")
-    print(f"   Make sure database.py exists in the same folder")
-    traceback.print_exc()
+    logger.error("Failed to import database module", exc_info=True, extra={'extra_data': {
+        'error': str(e)
+    }})
     sys.exit(1)
 
 # Create Flask app
-print("\nCreating Flask application...")
 app = Flask(__name__)
 
-# Configure CORS based on environment
+# Configure CORS
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://sql-frontend-lb-1605016243.ap-south-2.elb.amazonaws.com')
 ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', FRONTEND_URL).split(',')
 
-print(f"Allowed CORS origins: {ALLOWED_ORIGINS}")
+logger.info("Configuring CORS", extra={'extra_data': {
+    'allowed_origins': ALLOWED_ORIGINS
+}})
 
 CORS(app, resources={
     r"/api/*": {
         "origins": ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
+        "allow_headers": ["Content-Type", "Authorization", "X-Correlation-ID"],
         "supports_credentials": True
     }
 })
 
-print("✓ Flask app created with CORS enabled")
+# Register middleware
+@app.before_request
+def before_request():
+    log_request_middleware()
+    log_with_context(
+        logger,
+        'INFO',
+        "Incoming request",
+        method=request.method,
+        path=request.path,
+        correlation_id=g.correlation_id
+    )
 
-# Define routes
-print("\nRegistering routes...")
+@app.after_request
+def after_request(response):
+    log_with_context(
+        logger,
+        'INFO',
+        "Request completed",
+        method=request.method,
+        path=request.path,
+        status_code=response.status_code,
+        correlation_id=g.correlation_id
+    )
+    
+    # Add correlation ID to response headers
+    response.headers['X-Correlation-ID'] = g.correlation_id
+    return response
 
+# Routes
 @app.route('/')
 def home():
+    logger.info("Health check endpoint accessed")
     return {"message": "SQL Runner API is running", "status": "healthy"}
 
 @app.route('/health')
 def health():
-    """Health check endpoint for deployment platforms"""
+    logger.info("Detailed health check endpoint accessed")
     return {"status": "healthy", "database": "connected"}
 
 @app.route('/api/query', methods=['POST'])
+@log_api_call
 def run_query():
     """Execute SQL query"""
     data = request.get_json()
     query = data.get('query', '')
-
+    
     if not query:
+        log_with_context(
+            logger,
+            'WARNING',
+            "Empty query received",
+            endpoint='/api/query'
+        )
         return jsonify({"success": False, "error": "No query provided"}), 400
-
+    
+    # Log query details (sanitized)
+    query_preview = query[:100] + '...' if len(query) > 100 else query
+    query_type = query.strip().split()[0].upper() if query.strip() else 'UNKNOWN'
+    
+    log_with_context(
+        logger,
+        'INFO',
+        "Executing SQL query",
+        query_type=query_type,
+        query_preview=query_preview,
+        query_length=len(query)
+    )
+    
     result = execute_query(query)
+    
+    if result.get('success'):
+        log_with_context(
+            logger,
+            'INFO',
+            "Query executed successfully",
+            query_type=query_type,
+            rows_affected=result.get('rowcount', 0),
+            has_data=len(result.get('data', [])) > 0
+        )
+    else:
+        log_with_context(
+            logger,
+            'ERROR',
+            "Query execution failed",
+            query_type=query_type,
+            error=result.get('error', 'Unknown error')
+        )
+    
     return jsonify(result)
 
 @app.route('/api/tables', methods=['GET'])
+@log_api_call
 def list_tables():
     """Get all table names"""
+    log_with_context(
+        logger,
+        'INFO',
+        "Fetching all tables"
+    )
+    
     tables = get_all_tables()
+    
+    log_with_context(
+        logger,
+        'INFO',
+        "Tables retrieved successfully",
+        table_count=len(tables),
+        tables=tables
+    )
+    
     return jsonify({"success": True, "tables": tables})
 
 @app.route('/api/tables/<table_name>', methods=['GET'])
+@log_api_call
 def table_details(table_name):
     """Get table schema and sample data"""
+    log_with_context(
+        logger,
+        'INFO',
+        "Fetching table details",
+        table_name=table_name
+    )
+    
     result = get_table_info(table_name)
+    
+    if result.get('success'):
+        log_with_context(
+            logger,
+            'INFO',
+            "Table details retrieved successfully",
+            table_name=table_name,
+            column_count=len(result.get('columns', [])),
+            sample_rows=len(result.get('sample_data', []))
+        )
+    else:
+        log_with_context(
+            logger,
+            'ERROR',
+            "Failed to retrieve table details",
+            table_name=table_name,
+            error=result.get('error', 'Unknown error')
+        )
+    
     return jsonify(result)
 
-print("✓ All routes registered")
-print("\n" + "="*60)
-print("STARTING FLASK SERVER...")
-PORT = int(os.getenv('PORT', 8000))
-print(f"Server URL: http://0.0.0.0:{PORT}")
-print("Press CTRL+C to stop the server")
-print("="*60 + "\n")
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    log_with_context(
+        logger,
+        'WARNING',
+        "Endpoint not found",
+        path=request.path,
+        method=request.method
+    )
+    return jsonify({"success": False, "error": "Endpoint not found"}), 404
 
-# Run the app
+@app.errorhandler(500)
+def internal_error(error):
+    log_with_context(
+        logger,
+        'ERROR',
+        "Internal server error",
+        error=str(error),
+        path=request.path
+    )
+    return jsonify({"success": False, "error": "Internal server error"}), 500
+
 if __name__ == '__main__':
+    PORT = int(os.getenv('PORT', 8000))
+    DEBUG = os.getenv('DEBUG', 'False') == 'True'
+    
+    logger.info("Starting Flask server", extra={'extra_data': {
+        'port': PORT,
+        'debug': DEBUG,
+        'host': '0.0.0.0'
+    }})
+    
     try:
-        app.run(host='0.0.0.0', port=PORT, debug=os.getenv('DEBUG', 'False') == 'True')
+        app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
     except Exception as e:
-        print(f"\n✗ ERROR starting server: {e}")
-        traceback.print_exc()
+        logger.error("Failed to start server", exc_info=True, extra={'extra_data': {
+            'error': str(e)
+        }})
         sys.exit(1)
