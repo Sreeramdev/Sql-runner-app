@@ -74,7 +74,7 @@ print("\nCreating Flask application...")
 app = Flask(__name__)
 
 # Configure CORS based on environment
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://sql-frontend-lb-1605016243.ap-south-2.elb.amazonaws.com')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://SQL-FRONTEND-LB-1605016243.ap-south-2.elb.amazonaws.com')
 ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', FRONTEND_URL).split(',')
 
 print(f"Allowed CORS origins: {ALLOWED_ORIGINS}")

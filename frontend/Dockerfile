@@ -13,7 +13,7 @@ RUN yarn install --frozen-lockfile
 COPY . .
 
 # Build argument for API URL
-ARG VITE_API_URL=http://localhost:8000
+ARG VITE_API_URL=http://sql-backend-lb-735475995.ap-south-2.elb.amazonaws.com
 ENV VITE_API_URL=${VITE_API_URL}
 
 # Build the app
