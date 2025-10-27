@@ -3,10 +3,20 @@
 import sys
 import traceback
 import os
+import logging
+from datetime import datetime
 
 print("="*60)
 print("SQL RUNNER BACKEND - STARTING...")
 print("="*60)
+
+# Setup logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # Step 1: Import Flask
 try:
@@ -37,14 +47,12 @@ except Exception as e:
     sys.exit(1)
 
 # Step 4: Check and setup database if needed
-# Use environment variable or default path
 DATABASE_PATH = os.getenv('DATABASE_PATH', os.path.join(os.path.dirname(__file__), '..', 'database', 'sql_runner.db'))
 print(f"\nDatabase path: {DATABASE_PATH}")
 
 print("\nChecking database...")
 if not os.path.exists(DATABASE_PATH):
     print("⚠ Database not found. Creating database...")
-    # Create database directory if it doesn't exist
     os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
     setup_database()
     print("✓ Database setup completed")
@@ -101,21 +109,41 @@ def run_query():
     query = data.get('query', '')
 
     if not query:
+        logger.warning("Query request received with no query")
         return jsonify({"success": False, "error": "No query provided"}), 400
 
+    # Log the incoming query
+    logger.info(f"Query received: {query}")
+
     result = execute_query(query)
+    
+    # Log the result
+    if result.get('success'):
+        rowcount = result.get('rowcount', 0)
+        logger.info(f"Query executed successfully - {rowcount} rows affected/returned")
+    else:
+        error = result.get('error', 'Unknown error')
+        logger.error(f"Query failed: {error}")
+    
     return jsonify(result)
 
 @app.route('/api/tables', methods=['GET'])
 def list_tables():
     """Get all table names"""
+    logger.info("Fetching all tables")
     tables = get_all_tables()
+    logger.info(f"Found {len(tables)} tables")
     return jsonify({"success": True, "tables": tables})
 
 @app.route('/api/tables/<table_name>', methods=['GET'])
 def table_details(table_name):
     """Get table schema and sample data"""
+    logger.info(f"Fetching details for table: {table_name}")
     result = get_table_info(table_name)
+    if result.get('success'):
+        logger.info(f"Table details retrieved successfully for: {table_name}")
+    else:
+        logger.error(f"Failed to get table details for: {table_name}")
     return jsonify(result)
 
 print("✓ All routes registered")
@@ -129,8 +157,10 @@ print("="*60 + "\n")
 # Run the app
 if __name__ == '__main__':
     try:
+        logger.info("Flask server starting...")
         app.run(host='0.0.0.0', port=PORT, debug=os.getenv('DEBUG', 'False') == 'True')
     except Exception as e:
+        logger.error(f"Server error: {e}")
         print(f"\n✗ ERROR starting server: {e}")
         traceback.print_exc()
         sys.exit(1)

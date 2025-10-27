@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useState } from 'react';
 import { theme } from './config/theme';
 import Header from './components/Header';
@@ -8,14 +7,30 @@ import TablePreview from './components/RightSidebar/TablePreview';
 
 function App() {
   const [selectedTable, setSelectedTable] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleTableClick = (tableName) => {
     setSelectedTable(tableName);
+    setShowHistory(false); // Close history when table is selected
+  };
+
+  const handleHistoryToggle = () => {
+    setShowHistory(!showHistory);
+  };
+
+  const handleQuerySelect = (selectedQuery) => {
+    // This will be used to set the query in the editor
+    // You'll need to pass this down to EditorPanel
+    setShowHistory(false);
+    // Pass the selectedQuery to EditorPanel via props
   };
 
   return (
     <div style={styles.app}>
-      <Header />
+      <Header 
+        onHistoryToggle={handleHistoryToggle}
+        showHistory={showHistory}
+      />
       <div style={styles.mainContent}>
         {/* Left Sidebar */}
         <div style={styles.leftSidebar}>
@@ -24,12 +39,16 @@ function App() {
 
         {/* Center Panel */}
         <div style={styles.centerPanel}>
-          <EditorPanel />
+          <EditorPanel onQuerySelect={handleQuerySelect} />
         </div>
 
         {/* Right Sidebar */}
         <div style={styles.rightSidebar}>
-          <TablePreview tableName={selectedTable} />
+          <TablePreview 
+            tableName={selectedTable}
+            showHistory={showHistory}
+            onQuerySelect={handleQuerySelect}
+          />
         </div>
       </div>
     </div>
