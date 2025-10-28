@@ -1,4 +1,3 @@
-// src/components/LeftSidebar/TableList.jsx
 import { useState, useEffect } from 'react';
 import { getAllTables, getTableDetails } from '../../services/api';
 import { theme } from '../../config/theme';
@@ -20,7 +19,6 @@ const TableList = ({ onTableClick }) => {
       const response = await getAllTables();
       if (response.success) {
         setTables(response.tables);
-        // Load details for all tables
         response.tables.forEach(loadTableDetails);
       } else {
         setError('Failed to load tables');

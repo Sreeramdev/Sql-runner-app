@@ -2,7 +2,6 @@ export const MAX_HISTORY_QUERIES = 7;
 
 export const queryHistoryManager = {
   /**
-   * Get all query history from localStorage
    * @returns {Array} Array of query history objects
    */
   getHistory: () => {
@@ -30,10 +29,8 @@ export const queryHistoryManager = {
         timestamp: new Date().toISOString(),
       };
 
-      // Remove duplicate if exists
       const filtered = history.filter(entry => entry.query !== query.trim());
 
-      // Add new query at the beginning and limit to MAX_HISTORY_QUERIES
       const updated = [newEntry, ...filtered].slice(0, MAX_HISTORY_QUERIES);
 
       localStorage.setItem('sqlQueryHistory', JSON.stringify(updated));
@@ -42,9 +39,7 @@ export const queryHistoryManager = {
     }
   },
 
-  /**
-   * Clear all query history
-   */
+  
   clearHistory: () => {
     try {
       localStorage.removeItem('sqlQueryHistory');

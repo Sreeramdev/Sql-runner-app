@@ -27,7 +27,6 @@ const EditorPanel = () => {
       setRowCount(null);
       setQueryType(null);
 
-      // Detect query type
       const trimmedQuery = query.trim().toUpperCase();
       let detectedType = 'SELECT';
 
@@ -45,7 +44,6 @@ const EditorPanel = () => {
         setRowCount(response.rowcount);
         setQueryType(detectedType);
         
-        // Add query to history
         queryHistoryManager.addQuery(query);
       } else {
         setError(response.error);

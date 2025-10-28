@@ -1,4 +1,3 @@
-// src/components/QueryEditor/Toolbar.jsx
 import { theme } from '../../config/theme';
 
 const Toolbar = ({ onRunQuery, loading }) => {

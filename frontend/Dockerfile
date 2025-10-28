@@ -1,31 +1,22 @@
-# Build stage
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
 COPY package.json yarn.lock ./
 
-# Install dependencies
 RUN yarn install --frozen-lockfile
 
-# Copy source code
 COPY . .
 
-# Build argument for API URL
 ARG VITE_API_URL=http://localhost:8000
 ENV VITE_API_URL=${VITE_API_URL}
 
-# Build the app
 RUN yarn build
 
-# Production stage
 FROM nginx:alpine
 
-# Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Configure nginx for SPA with production settings
 RUN printf 'server {\n\
     listen 80;\n\
     server_name _;\n\

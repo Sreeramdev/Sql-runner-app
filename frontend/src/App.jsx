@@ -11,7 +11,7 @@ function App() {
 
   const handleTableClick = (tableName) => {
     setSelectedTable(tableName);
-    setShowHistory(false); // Close history when table is selected
+    setShowHistory(false); 
   };
 
   const handleHistoryToggle = () => {
@@ -19,10 +19,9 @@ function App() {
   };
 
   const handleQuerySelect = (selectedQuery) => {
-    // This will be used to set the query in the editor
-    // You'll need to pass this down to EditorPanel
+    
     setShowHistory(false);
-    // Pass the selectedQuery to EditorPanel via props
+    
   };
 
   return (

@@ -1,28 +1,23 @@
 // src/config/theme.js
 export const theme = {
   colors: {
-    // Main background colors
     primary: '#1a1d29',
     secondary: '#252936',
     tertiary: '#2d3142',
 
-    // Accent colors
     accent: '#4f7cff',
     accentHover: '#6b8fff',
     success: '#10b981',
     error: '#ef4444',
     warning: '#f59e0b',
 
-    // Text colors
     textPrimary: '#e5e7eb',
     textSecondary: '#9ca3af',
     textMuted: '#6b7280',
 
-    // Border colors
     border: '#374151',
     borderLight: '#4b5563',
 
-    // Syntax highlighting
     syntaxKeyword: '#c678dd',
     syntaxString: '#98c379',
     syntaxNumber: '#d19a66',

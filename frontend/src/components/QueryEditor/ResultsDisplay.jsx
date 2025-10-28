@@ -1,4 +1,3 @@
-// src/components/QueryEditor/ResultsDisplay.jsx
 import { theme } from '../../config/theme';
 
 const ResultsDisplay = ({ data, error, loading, rowCount, queryType }) => {
@@ -20,7 +19,6 @@ const ResultsDisplay = ({ data, error, loading, rowCount, queryType }) => {
     );
   }
 
-  // Handle modification queries (INSERT, UPDATE, DELETE, CREATE, DROP, ALTER)
   if (queryType && ['INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER'].includes(queryType)) {
     return (
       <div style={styles.container}>
@@ -29,9 +27,7 @@ const ResultsDisplay = ({ data, error, loading, rowCount, queryType }) => {
     );
   }
 
-  // Handle SELECT queries with no results
   if (!data || data.length === 0) {
-    // If rowCount is 0 and we had a SELECT query
     if (rowCount === 0 && queryType === 'SELECT') {
       return (
         <div style={styles.container}>
@@ -43,7 +39,6 @@ const ResultsDisplay = ({ data, error, loading, rowCount, queryType }) => {
       );
     }
 
-    // No query executed yet
     return (
       <div style={styles.container}>
         <div style={styles.message}>Run a query to see results</div>
@@ -51,7 +46,6 @@ const ResultsDisplay = ({ data, error, loading, rowCount, queryType }) => {
     );
   }
 
-  // Handle SELECT queries with results
   const columns = Object.keys(data[0]);
 
   return (
@@ -90,7 +84,6 @@ const ResultsDisplay = ({ data, error, loading, rowCount, queryType }) => {
   );
 };
 
-// Helper function to render modification query messages
 const renderModificationMessage = (queryType, rowCount) => {
   const count = rowCount || 0;
 
