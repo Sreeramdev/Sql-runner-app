@@ -1,4 +1,3 @@
-// src/components/LeftSidebar/TableItem.jsx
 import { useState } from 'react';
 import { theme } from '../../config/theme';
 
