@@ -1,13 +1,12 @@
 import sqlite3
 import os
 
-# Use environment variable or default path
 DATABASE_PATH = os.getenv('DATABASE_PATH', os.path.join(os.path.dirname(__file__), '..', 'database', 'sql_runner.db'))
 
 def get_connection():
     """Create database connection"""
     conn = sqlite3.connect(DATABASE_PATH)
-    conn.row_factory = sqlite3.Row  # Access columns by name
+    conn.row_factory = sqlite3.Row  
     return conn
 
 def execute_query(query):
@@ -18,10 +17,9 @@ def execute_query(query):
     try:
         cursor.execute(query)
 
-        # Determine query type
         query_upper = query.strip().upper()
 
-        # For SELECT queries
+        #  SELECT queries
         if query_upper.startswith('SELECT') or query_upper.startswith('PRAGMA'):
             results = cursor.fetchall()
             return {
@@ -40,7 +38,7 @@ def execute_query(query):
                 "rowcount": affected_rows
             }
 
-        # For DDL queries (CREATE, DROP, ALTER)
+        # For  (CREATE, DROP, ALTER)
         else:
             conn.commit()
             return {
@@ -74,11 +72,9 @@ def get_table_info(table_name):
     cursor = conn.cursor()
 
     try:
-        # Get column information
         cursor.execute(f"PRAGMA table_info({table_name})")
         columns = [{"name": row[1], "type": row[2]} for row in cursor.fetchall()]
 
-        # Get first 5 rows
         cursor.execute(f"SELECT * FROM {table_name} LIMIT 5")
         sample_data = [dict(row) for row in cursor.fetchall()]
 

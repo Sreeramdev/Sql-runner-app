@@ -2,10 +2,9 @@ import sqlite3
 import os
 
 def setup_database():
-    # Use environment variable or default path
     DATABASE_PATH = os.getenv('DATABASE_PATH', os.path.join(os.path.dirname(__file__), '..', 'database', 'sql_runner.db'))
 
-    # Create/connect to database
+    # cannect to database
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 

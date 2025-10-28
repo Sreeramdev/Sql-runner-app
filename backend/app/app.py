@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 import sys
 import traceback
@@ -10,7 +9,6 @@ print("="*60)
 print("SQL RUNNER BACKEND - STARTING...")
 print("="*60)
 
-# Setup logger
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -18,7 +16,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Step 1: Import Flask
 try:
     from flask import Flask, request, jsonify
     print("✓ Flask imported successfully")
@@ -27,7 +24,6 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 
-# Step 2: Import CORS
 try:
     from flask_cors import CORS
     print("✓ Flask-CORS imported successfully")
@@ -36,7 +32,6 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 
-# Step 3: Import setup module
 try:
     from setup import setup_database
     print("✓ Setup module imported successfully")
@@ -46,7 +41,7 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 
-# Step 4: Check and setup database if needed
+# Check and setup database if needed
 DATABASE_PATH = os.getenv('DATABASE_PATH', os.path.join(os.path.dirname(__file__), '..', 'database', 'sql_runner.db'))
 print(f"\nDatabase path: {DATABASE_PATH}")
 
@@ -59,7 +54,7 @@ if not os.path.exists(DATABASE_PATH):
 else:
     print("✓ Database already exists")
 
-# Step 5: Import database module
+
 try:
     from database import execute_query, get_all_tables, get_table_info
     print("✓ Database module imported successfully")
@@ -69,12 +64,10 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 
-# Create Flask app
 print("\nCreating Flask application...")
 app = Flask(__name__)
 
-# Configure CORS based on environment
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://sql-frontend-lb-1605016243.ap-south-2.elb.amazonaws.com')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://sql-frontend-lb-735475995.ap-south-2.elb.amazonaws.com')
 ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', FRONTEND_URL).split(',')
 
 print(f"Allowed CORS origins: {ALLOWED_ORIGINS}")
@@ -90,9 +83,8 @@ CORS(app, resources={
 
 print("✓ Flask app created with CORS enabled")
 
-# Define routes
 print("\nRegistering routes...")
-
+# routes for the api
 @app.route('/')
 def home():
     return {"message": "SQL Runner API is running", "status": "healthy"}
@@ -112,12 +104,10 @@ def run_query():
         logger.warning("Query request received with no query")
         return jsonify({"success": False, "error": "No query provided"}), 400
 
-    # Log the incoming query
     logger.info(f"Query received: {query}")
 
     result = execute_query(query)
     
-    # Log the result
     if result.get('success'):
         rowcount = result.get('rowcount', 0)
         logger.info(f"Query executed successfully - {rowcount} rows affected/returned")
@@ -154,7 +144,7 @@ print(f"Server URL: http://0.0.0.0:{PORT}")
 print("Press CTRL+C to stop the server")
 print("="*60 + "\n")
 
-# Run the app
+# app will run on the port 8000
 if __name__ == '__main__':
     try:
         logger.info("Flask server starting...")
